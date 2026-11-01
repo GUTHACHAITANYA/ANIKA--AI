@@ -42,3 +42,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 # Start Gunicorn WSGI server
 CMD gunicorn "backend.app:create_app()" --bind 0.0.0.0:${PORT} --workers 2 --timeout 120
+

@@ -13,3 +13,4 @@ instance/*.db
 dist
 tests
 .pytest_cache
+
