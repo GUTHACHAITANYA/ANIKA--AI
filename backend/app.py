@@ -74,20 +74,29 @@ def create_app(config_class=Config):
 
     @app.errorhandler(500)
     def internal_server_error(e):
-        logger.error(f"Internal Server Error: {e}")
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"Internal Server Error: {e}\n{tb}")
+        err_msg = str(getattr(e, 'description', e))
         return jsonify({
             "success": False,
-            "error": "A system error occurred while processing your request. Please try again shortly.",
+            "error": "A system error occurred while processing your request.",
+            "details": err_msg,
             "status_code": 500
         }), 500
 
     @app.route('/api/health', methods=['GET'])
     def health_check():
+        db_status = "connected"
+        try:
+            db.session.execute(db.text("SELECT 1"))
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
         return jsonify({
             "status": "healthy",
             "platform": "ANIKA-AI",
             "version": "1.0.0",
-            "database": "connected"
+            "database": db_status
         })
 
     # Production Single-Page App (SPA) static files & frontend routing
@@ -119,19 +128,23 @@ def create_app(config_class=Config):
         })
 
     with app.app_context():
-        db.create_all()
-        # Seed initial demo user if database is empty
-        if not User.query.first():
-            demo_user = User(
-                username="chaitu",
-                email="chaitu@anika.ai",
-                full_name="Chaitanya (You)",
-                monthly_budget=45000.0
-            )
-            demo_user.set_password("anika123")
-            db.session.add(demo_user)
-            db.session.commit()
-            logger.info("Initialized default demo user 'chaitu' with budget INR 45,000.")
+        try:
+            db.create_all()
+            # Seed initial demo user if database is empty
+            if not User.query.first():
+                demo_user = User(
+                    username="chaitu",
+                    email="chaitu@anika.ai",
+                    full_name="Chaitanya (You)",
+                    monthly_budget=45000.0
+                )
+                demo_user.set_password("anika123")
+                db.session.add(demo_user)
+                db.session.commit()
+                logger.info("Initialized default demo user 'chaitu' with budget INR 45,000.")
+        except Exception as e:
+            logger.error(f"Database initialization error: {e}")
+            db.session.rollback()
 
     return app
 

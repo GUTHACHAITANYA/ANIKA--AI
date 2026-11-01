@@ -17,19 +17,39 @@ class Config:
     os.makedirs(DB_PATH.parent, exist_ok=True)
     
     _raw_db_url = os.getenv("DATABASE_URL")
-    if _raw_db_url and _raw_db_url.startswith("sqlite:///"):
-        _rel_path = _raw_db_url.replace("sqlite:///", "", 1)
-        if not os.path.isabs(_rel_path) and not (_rel_path.startswith(":") or (len(_rel_path) > 1 and _rel_path[1] == ":")):
-            _resolved_path = (BASE_DIR / _rel_path).resolve()
-            os.makedirs(_resolved_path.parent, exist_ok=True)
-            SQLALCHEMY_DATABASE_URI = f"sqlite:///{_resolved_path.as_posix()}"
+    if _raw_db_url:
+        # Convert legacy postgres:// to postgresql:// (Render / Heroku compatibility)
+        if _raw_db_url.startswith("postgres://"):
+            _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+
+        if _raw_db_url.startswith("sqlite:///"):
+            _rel_path = _raw_db_url.replace("sqlite:///", "", 1)
+            if not os.path.isabs(_rel_path) and not (_rel_path.startswith(":") or (len(_rel_path) > 1 and _rel_path[1] == ":")):
+                _resolved_path = (BASE_DIR / _rel_path).resolve()
+                os.makedirs(_resolved_path.parent, exist_ok=True)
+                SQLALCHEMY_DATABASE_URI = f"sqlite:///{_resolved_path.as_posix()}"
+            else:
+                SQLALCHEMY_DATABASE_URI = _raw_db_url
         else:
             SQLALCHEMY_DATABASE_URI = _raw_db_url
-    elif _raw_db_url:
-        SQLALCHEMY_DATABASE_URI = _raw_db_url
     else:
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{DB_PATH.as_posix()}"
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Connection pooling & concurrency settings
+    if "sqlite" in SQLALCHEMY_DATABASE_URI.lower():
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "connect_args": {
+                "timeout": 30,
+                "check_same_thread": False
+            }
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "pool_recycle": 300
+        }
     
     # AI Keys
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")

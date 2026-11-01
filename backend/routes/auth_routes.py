@@ -53,28 +53,56 @@ def register():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json() or {}
-    identifier = (data.get('username') or data.get('identifier') or '').strip()
-    password = data.get('password') or ''
+    try:
+        data = request.get_json() or {}
+        identifier = (data.get('username') or data.get('identifier') or '').strip()
+        password = data.get('password') or ''
 
-    if not identifier or not password:
-        return error_response("Please enter your username/email and password.", 400)
+        if not identifier or not password:
+            return error_response("Please enter your username/email and password.", 400)
 
-    # Allow login with either username or email
-    user = User.query.filter(
-        (User.username == identifier) | (User.email == identifier.lower())
-    ).first()
+        # Ensure database tables exist
+        try:
+            db.create_all()
+        except Exception:
+            pass
 
-    if not user or not user.check_password(password):
-        return error_response("Invalid credentials. Please verify your username and password.", 401)
+        # Allow login with either username or email
+        user = User.query.filter(
+            (User.username == identifier) | (User.email == identifier.lower())
+        ).first()
 
-    login_user(user, remember=True)
-    session['user_id'] = user.id
+        # If user not found and logging in as default demo user, auto-seed
+        if not user and (identifier.lower() in ("chaitu", "chaitu@anika.ai")):
+            try:
+                user = User(
+                    username="chaitu",
+                    email="chaitu@anika.ai",
+                    full_name="Chaitanya (You)",
+                    monthly_budget=45000.0
+                )
+                user.set_password("anika123")
+                db.session.add(user)
+                db.session.commit()
+                logger.info("Auto-seeded default user 'chaitu' on login attempt.")
+            except Exception as seed_err:
+                db.session.rollback()
+                logger.warning(f"Auto-seed error on login: {seed_err}")
 
-    log_user_activity(user.id, "USER_LOGIN", f"User {user.username} logged in")
-    logger.info(f"User logged in: {user.username}")
+        if not user or not user.check_password(password):
+            return error_response("Invalid credentials. Please verify your username and password.", 401)
 
-    return success_response(user.to_dict(), "Login successful!")
+        login_user(user, remember=True)
+        session['user_id'] = user.id
+
+        log_user_activity(user.id, "USER_LOGIN", f"User {user.username} logged in")
+        logger.info(f"User logged in: {user.username}")
+
+        return success_response(user.to_dict(), "Login successful!")
+    except Exception as e:
+        import traceback
+        logger.error(f"Login unexpected exception: {e}\n{traceback.format_exc()}")
+        return error_response(f"Login failed due to a system error: {str(e)}", 500)
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

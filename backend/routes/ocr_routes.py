@@ -24,88 +24,115 @@ def upload_and_process():
     Validates file formats, sizes, extracts structured data via Gemini OCR,
     and returns both individual receipt structures and combined totals.
     """
-    user = get_current_user()
-    user_id = user.id if user else 1
+    try:
+        user = get_current_user()
+        if not user:
+            # Fallback to or create default user
+            user = User.query.first()
+            if not user:
+                try:
+                    user = User(
+                        username="chaitu",
+                        email="chaitu@anika.ai",
+                        full_name="Chaitanya (You)",
+                        monthly_budget=45000.0
+                    )
+                    user.set_password("anika123")
+                    db.session.add(user)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    user = User.query.first()
 
-    # Check for files
-    if 'files' not in request.files and 'file' not in request.files:
-        return error_response("No files were provided for upload.", 400)
+        user_id = user.id if user else 1
 
-    uploaded_files = request.files.getlist('files')
-    if not uploaded_files and 'file' in request.files:
-        uploaded_files = [request.files['file']]
+        # Ensure upload destination directory exists
+        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 
-    if not uploaded_files or uploaded_files[0].filename == '':
-        return error_response("Please select at least one valid receipt or bill file.", 400)
+        # Check for files
+        if 'files' not in request.files and 'file' not in request.files:
+            return error_response("No files were provided for upload.", 400)
 
-    results = []
-    errors = []
+        uploaded_files = request.files.getlist('files')
+        if not uploaded_files and 'file' in request.files:
+            uploaded_files = [request.files['file']]
 
-    for file in uploaded_files:
-        if not allowed_file(file.filename, Config.ALLOWED_EXTENSIONS):
-            errors.append(f"File '{file.filename}' has an unsupported extension. Allowed: JPG, JPEG, PNG, WEBP, PDF.")
-            continue
+        if not uploaded_files or uploaded_files[0].filename == '':
+            return error_response("Please select at least one valid receipt or bill file.", 400)
 
-        try:
-            # 1. Save file securely
-            saved_path, orig_name, file_size = sanitize_and_save_file(file, Config.UPLOAD_FOLDER)
-            
-            # 2. Check file size limit
-            if file_size > Config.MAX_CONTENT_LENGTH:
-                errors.append(f"File '{orig_name}' exceeds maximum allowed size of 16MB.")
+        results = []
+        errors = []
+
+        for file in uploaded_files:
+            if not allowed_file(file.filename, Config.ALLOWED_EXTENSIONS):
+                errors.append(f"File '{file.filename}' has an unsupported extension. Allowed: JPG, JPEG, PNG, WEBP, PDF.")
                 continue
 
-            # 3. Preprocess if image
-            if not saved_path.lower().endswith('.pdf'):
-                preprocess_receipt_image(saved_path)
+            try:
+                # 1. Save file securely
+                saved_path, orig_name, file_size = sanitize_and_save_file(file, Config.UPLOAD_FOLDER)
+                
+                # 2. Check file size limit
+                if file_size > Config.MAX_CONTENT_LENGTH:
+                    errors.append(f"File '{orig_name}' exceeds maximum allowed size of 16MB.")
+                    continue
 
-            # 4. Extract structured data via OCR
-            ocr_result = gemini_ocr_service.extract_from_image(saved_path)
-            extracted_data = ocr_result.get("data", {})
+                # 3. Preprocess if image
+                if not saved_path.lower().endswith('.pdf'):
+                    preprocess_receipt_image(saved_path)
 
-            # 5. Save Receipt record in DB
-            receipt_record = Receipt(
-                user_id=user_id,
-                file_path=saved_path,
-                original_filename=orig_name,
-                mime_type=file.content_type or 'application/octet-stream',
-                file_size=file_size,
-                raw_extracted_json=json.dumps(extracted_data),
-                ocr_confidence=float(extracted_data.get('confidence', 0.95))
-            )
-            db.session.add(receipt_record)
-            db.session.commit()
+                # 4. Extract structured data via OCR
+                ocr_result = gemini_ocr_service.extract_from_image(saved_path)
+                extracted_data = ocr_result.get("data", {})
 
-            results.append({
-                "receipt_id": receipt_record.id,
-                "original_filename": orig_name,
-                "file_path": saved_path,
-                "engine": ocr_result.get("engine", "gemini"),
-                "data": extracted_data
-            })
+                # 5. Save Receipt record in DB
+                receipt_record = Receipt(
+                    user_id=user_id,
+                    file_path=saved_path,
+                    original_filename=orig_name,
+                    mime_type=file.content_type or 'application/octet-stream',
+                    file_size=file_size,
+                    raw_extracted_json=json.dumps(extracted_data),
+                    ocr_confidence=float(extracted_data.get('confidence', 0.95))
+                )
+                db.session.add(receipt_record)
+                db.session.commit()
 
-            log_user_activity(
-                user_id, "OCR_UPLOAD",
-                f"Processed receipt '{orig_name}' (Total: ₹{extracted_data.get('total', 0.0):,.2f})",
-                {"receipt_id": receipt_record.id, "total": extracted_data.get('total')}
-            )
+                results.append({
+                    "receipt_id": receipt_record.id,
+                    "original_filename": orig_name,
+                    "file_path": saved_path,
+                    "engine": ocr_result.get("engine", "gemini"),
+                    "data": extracted_data
+                })
 
-        except Exception as e:
-            logger.error(f"Error processing upload '{file.filename}': {e}")
-            errors.append(f"Unable to process '{file.filename}'. Please try a clearer image.")
+                log_user_activity(
+                    user_id, "OCR_UPLOAD",
+                    f"Processed receipt '{orig_name}' (Total: ₹{extracted_data.get('total', 0.0):,.2f})",
+                    {"receipt_id": receipt_record.id, "total": extracted_data.get('total')}
+                )
 
-    if not results and errors:
-        return error_response("Failed to process uploaded receipts.", 400, errors=errors)
+            except Exception as e:
+                import traceback
+                logger.error(f"Error processing upload '{file.filename}': {e}\n{traceback.format_exc()}")
+                errors.append(f"Unable to process '{file.filename}'. Please try a clearer image.")
 
-    # Multi-bill aggregation
-    summary = aggregate_multi_bills(results)
-    
-    return success_response({
-        "summary": summary,
-        "processed_count": len(results),
-        "receipts": results,
-        "warnings": errors
-    }, f"Successfully analyzed {len(results)} receipt(s).")
+        if not results and errors:
+            return error_response("Failed to process uploaded receipts.", 400, errors=errors)
+
+        # Multi-bill aggregation
+        summary = aggregate_multi_bills(results)
+        
+        return success_response({
+            "summary": summary,
+            "processed_count": len(results),
+            "receipts": results,
+            "warnings": errors
+        }, f"Successfully analyzed {len(results)} receipt(s).")
+    except Exception as top_err:
+        import traceback
+        logger.error(f"Upload endpoint fatal error: {top_err}\n{traceback.format_exc()}")
+        return error_response(f"Upload failed: {str(top_err)}", 500)
 
 @ocr_bp.route('/analyze', methods=['POST'])
 def analyze_text():
