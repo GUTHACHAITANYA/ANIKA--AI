@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-3 h-100" style="min-height: 70vh;">
+    <div class="col-lg-8 col-md-10 d-flex flex-column">
+        <div class="card glass-card flex-grow-1 d-flex flex-column border-0 shadow-lg overflow-hidden">
+            <!-- Chat Header -->
+            <div class="card-header bg-dark-subtle border-bottom border-secondary p-3 d-flex align-items-center">
+                <div class="icon-circle bg-primary-soft me-3 d-flex justify-content-center align-items-center rounded-circle" style="width:45px; height:45px;">
+                    <i class="fa-solid fa-robot text-primary fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 fw-bold">Anika AI</h5>
+                    <small class="text-success"><i class="fa-solid fa-circle text-success" style="font-size: 8px;"></i> Online</small>
+                </div>
+            </div>
+            
+            <!-- Smart Prompts Suggestions -->
+            <div class="bg-dark border-bottom border-secondary p-2 d-flex gap-2 overflow-auto hide-scrollbar" style="white-space: nowrap;">
+                <span class="badge bg-secondary-subtle text-light px-3 py-2 rounded-pill shadow-sm" style="cursor: pointer;" onclick="document.getElementById('userInput').value=this.innerText">Best earbuds under ₹2000</span>
+                <span class="badge bg-secondary-subtle text-light px-3 py-2 rounded-pill shadow-sm" style="cursor: pointer;" onclick="document.getElementById('userInput').value=this.innerText">Analyze this moisturizer for ₹600</span>
+                <span class="badge bg-secondary-subtle text-light px-3 py-2 rounded-pill shadow-sm" style="cursor: pointer;" onclick="document.getElementById('userInput').value=this.innerText">Plan a trip to Gujarat under ₹5000</span>
+                <span class="badge bg-secondary-subtle text-light px-3 py-2 rounded-pill shadow-sm" style="cursor: pointer;" onclick="document.getElementById('userInput').value=this.innerText">Am I overspending this month?</span>
+                <span class="badge bg-secondary-subtle text-light px-3 py-2 rounded-pill shadow-sm" style="cursor: pointer;" onclick="document.getElementById('userInput').value=this.innerText">Set my budget to ₹15000</span>
+            </div>
+
+            <!-- Chat Body -->
+            <div class="card-body chat-container d-flex flex-column gap-3 p-4 overflow-auto" id="chatBox" style="flex: 1; height: 500px; max-height: 60vh;">
+                <!-- Initial Greeting -->
+                <div class="d-flex align-items-start ai-message">
+                    <div class="icon-circle bg-primary me-2 d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width:35px; height:35px;">
+                        <i class="fa-solid fa-brain text-light"></i>
+                    </div>
+                    <div class="chat-bubble bg-dark-subtle text-light p-3 rounded-3 shadow-sm border border-secondary" style="max-width: 75%; border-top-left-radius: 0 !important;">
+                        Hi! I’m Anika 🖤<br>
+                        I am your smart conversational financial advisor! Tell me what you want to buy, plan, or ask.
+                    </div>
+                </div>
+
+                <!-- Database History Rendering -->
+                {% for msg in history %}
+                    {% if msg.role == 'user' %}
+                    <div class="d-flex align-items-start justify-content-end user-message">
+                        <div class="chat-bubble bg-primary text-light p-3 rounded-3 shadow-sm" style="max-width: 75%; border-top-right-radius: 0 !important;">
+                            {{ msg.content }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="d-flex align-items-start ai-message">
+                        <div class="icon-circle bg-primary me-2 d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width:35px; height:35px;">
+                            <i class="fa-solid fa-brain text-light"></i>
+                        </div>
+                        {% set border_color = 'border-secondary' %}
+                        {% if msg.message_type == 'buy' %}{% set border_color = 'border-success' %}{% endif %}
+                        {% if msg.message_type == 'wait' %}{% set border_color = 'border-warning' %}{% endif %}
+                        {% if msg.message_type == 'avoid' %}{% set border_color = 'border-danger' %}{% endif %}
+                        <div class="chat-bubble bg-dark-subtle text-light p-3 rounded-3 shadow-sm border {{ border_color }} ai-content-markdown" style="max-width: 75%; border-top-left-radius: 0 !important;">
+                            {{ msg.content | safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <!-- Chat Footer (Input) -->
+            <div class="card-footer bg-transparent border-top border-secondary p-3">
+                <form id="chatForm" class="d-flex gap-2">
+                    <input type="text" id="userInput" class="form-control custom-input py-2" placeholder="Ask me anything..." autocomplete="off" required>
+                    <button type="submit" class="btn btn-primary px-4 btn-glow rounded-3"><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('chatForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const input = document.getElementById('userInput');
+    const message = input.value.trim();
+    if(!message) return;
+    
+    // Add user message
+    addMessage(message, 'user');
+    input.value = '';
+    
+    // Show typing
+    const typingId = addTypingIndicator();
+    
+    // Call API
+    try {
+        const response = await fetch('{{ url_for("chat.send_message") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        });
+        const data = await response.json();
+        
+        // Remove typing
+        document.getElementById(typingId).remove();
+
+        if (!response.ok) {
+            const messageText = data.error || data.text || 'AI backend failure. Please check your API keys or try again later.';
+            addMessage(messageText, 'ai', 'error');
+            return;
+        }
+        
+        // Format response (convert markdown bold to HTML)
+        let formattedText = data.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formattedText = formattedText.replace(/\n/g, '<br>');
+        
+        addMessage(formattedText, 'ai', data.type);
+    } catch (err) {
+        document.getElementById(typingId).remove();
+        addMessage('Sorry, I am having trouble connecting to my neural network.', 'ai', 'error');
+    }
+});
+
+function addMessage(text, sender, type = 'neutral') {
+    const chatBox = document.getElementById('chatBox');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `d-flex align-items-start ${sender === 'user' ? 'justify-content-end user-message' : 'ai-message'} animate-fade-in`;
+    
+    if (sender === 'user') {
+        msgDiv.innerHTML = `
+            <div class="chat-bubble bg-primary text-light p-3 rounded-3 shadow-sm" style="max-width: 75%; border-top-right-radius: 0 !important;">
+                ${text}
+            </div>
+        `;
+    } else {
+        let borderClass = 'border-secondary';
+        if(type === 'buy') borderClass = 'border-success';
+        if(type === 'wait') borderClass = 'border-warning';
+        if(type === 'avoid') borderClass = 'border-danger';
+        if(type === 'error') borderClass = 'border-danger';
+        
+        msgDiv.innerHTML = `
+            <div class="icon-circle bg-primary me-2 d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width:35px; height:35px;">
+                <i class="fa-solid fa-brain text-light"></i>
+            </div>
+            <div class="chat-bubble bg-dark-subtle text-light p-3 rounded-3 shadow-sm border ${borderClass}" style="max-width: 75%; border-top-left-radius: 0 !important;">
+                ${text}
+            </div>
+        `;
+    }
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function addTypingIndicator() {
+    const chatBox = document.getElementById('chatBox');
+    const id = 'typing-' + Date.now();
+    const msgDiv = document.createElement('div');
+    msgDiv.id = id;
+    msgDiv.className = `d-flex align-items-start ai-message animate-fade-in`;
+    msgDiv.innerHTML = `
+        <div class="icon-circle bg-primary me-2 d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width:35px; height:35px;">
+            <i class="fa-solid fa-brain text-light"></i>
+        </div>
+        <div class="chat-bubble bg-dark-subtle text-light p-3 rounded-3 shadow-sm border border-secondary d-flex gap-1 align-items-center" style="border-top-left-radius: 0 !important; height: 40px;">
+            <div class="typing-dot"></div><div class="typing-dot ms-1"></div><div class="typing-dot ms-1"></div>
+        </div>
+    `;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return id;
+}
+</script>
+
+<style>
+/* Chat specifics */
+.typing-dot {
+    width: 6px; height: 6px; background: #a0a0a0; border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+</style>
+{% endblock %}

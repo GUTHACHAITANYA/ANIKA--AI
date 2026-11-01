@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center min-vh-75 pt-5 mt-4">
+    <!-- Left Content -->
+    <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5 animate-fade-in">
+        <div class="d-inline-flex align-items-center bg-primary-soft rounded-pill px-3 py-2 mb-4 border border-primary">
+            <span class="badge bg-primary rounded-pill me-2">New</span>
+            <span class="text-light small fw-semibold">Conversational Pre-Purchase Intelligence is live!</span>
+        </div>
+        
+        <h1 class="display-3 fw-bolder mb-4 lh-sm">
+            Meet <span class="gradient-text">Anika.</span><br>
+            Your AI Budget<br>Assistant.
+        </h1>
+        
+        <p class="lead text-secondary mb-5 fw-normal" style="font-size: 1.25rem; line-height: 1.7;">
+            Stop guessing and start saving. Ask Anika before you buy, and let advanced AI analyze prices, quality, and your budget to tell you if it's actually worth your money.
+        </p>
+        
+        <div class="d-flex flex-column flex-sm-row gap-3">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('chat.index') }}" class="btn btn-primary btn-glow rounded-pill px-5 py-3 fs-5 d-inline-flex justify-content-center align-items-center">
+                    <i class="fa-solid fa-robot me-2"></i> Ask Anika Now
+                </a>
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-light rounded-pill px-5 py-3 fs-5 d-inline-flex justify-content-center align-items-center">
+                    <i class="fa-solid fa-chart-pie me-2"></i> Dashboard
+                </a>
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-glow rounded-pill px-5 py-3 fs-5 d-inline-flex justify-content-center align-items-center">
+                    <i class="fa-solid fa-rocket me-2"></i> Start Saving
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light rounded-pill px-5 py-3 fs-5 d-inline-flex justify-content-center align-items-center">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Login
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="mt-5 d-flex align-items-center gap-4 text-muted small fw-semibold">
+            <div><i class="fa-solid fa-check-circle text-success me-1"></i> AI Product Scoring</div>
+            <div><i class="fa-solid fa-check-circle text-success me-1"></i> Smart Tracking</div>
+            <div><i class="fa-solid fa-check-circle text-success me-1"></i> 100% Free</div>
+        </div>
+    </div>
+
+    <!-- Right Content (Mockup Card) -->
+    <div class="col-lg-6 position-relative animate-fade-in" style="animation-delay: 0.2s;">
+        <!-- Decorative Glow -->
+        <div class="position-absolute bg-primary rounded-circle filter-blur" style="width: 300px; height: 300px; filter: blur(100px); opacity: 0.3; top: 10%; right: 10%; z-index: 0;"></div>
+        
+        <!-- Glass Mockup -->
+        <div class="card glass-card border-0 shadow-lg p-1 position-relative z-index-1 transform-perspective" style="transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);">
+            <div class="card-header bg-dark-subtle border-bottom border-secondary p-3 d-flex align-items-center rounded-top-4">
+                <div class="d-flex gap-2 me-auto">
+                    <div class="rounded-circle bg-danger" style="width: 12px; height: 12px;"></div>
+                    <div class="rounded-circle bg-warning" style="width: 12px; height: 12px;"></div>
+                    <div class="rounded-circle bg-success" style="width: 12px; height: 12px;"></div>
+                </div>
+                <div class="fw-semibold small text-muted"><i class="fa-solid fa-lock me-1"></i> anika.ai</div>
+                <div class="ms-auto" style="width: 44px;"></div>
+            </div>
+            
+            <div class="card-body p-4 bg-transparent d-flex flex-column gap-4">
+                <!-- User Message -->
+                <div class="d-flex align-items-start justify-content-end user-message">
+                    <div class="bg-primary text-light p-3 rounded-3 shadow-sm" style="max-width: 85%; border-top-right-radius: 0 !important;">
+                        Should I buy the new Apple AirPods Pro for ₹24,900?
+                    </div>
+                </div>
+                
+                <!-- AI Message -->
+                <div class="d-flex align-items-start ai-message">
+                    <div class="icon-circle bg-primary me-3 d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width:40px; height:40px;">
+                        <i class="fa-solid fa-brain text-light"></i>
+                    </div>
+                    <div class="bg-dark-subtle text-light p-3 rounded-3 shadow-sm border border-secondary" style="max-width: 85%; border-top-left-radius: 0 !important;">
+                        Based on the price of ₹24,900, my recommendation is to <strong class="text-danger">AVOID</strong>.<br><br>
+                        <strong>AI Value Score:</strong> <span class="badge bg-danger">40/100</span><br><br>
+                        <i class="fa-solid fa-lightbulb text-warning"></i> This item takes up <strong>62%</strong> of your remaining budget. Consider cheaper alternatives like the Sony WF-1000XM4.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mt-5 pt-5 pb-5 text-center justify-content-center border-top border-secondary" style="border-color: rgba(255,255,255,0.05) !important;">
+    <div class="col-12 mb-5">
+        <h2 class="fw-bold">Why use <span class="text-primary">Anika AI?</span></h2>
+        <p class="text-muted">A complete ecosystem for your personal finances.</p>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card glass-card h-100 p-4 border-0 text-center">
+            <div class="d-inline-flex justify-content-center align-items-center bg-primary-soft text-primary rounded-circle mb-4 mx-auto" style="width: 80px; height: 80px;">
+                <i class="fa-solid fa-comments fa-2xl"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Conversational AI</h4>
+            <p class="text-secondary mb-0">Just talk to Anika like a friend. Ask questions before buying and get instant smart advice based on real data.</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card glass-card h-100 p-4 border-0 text-center">
+            <div class="d-inline-flex justify-content-center align-items-center bg-primary-soft text-primary rounded-circle mb-4 mx-auto" style="width: 80px; height: 80px;">
+                <i class="fa-solid fa-chart-pie fa-2xl"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Budget Analytics</h4>
+            <p class="text-secondary mb-0">Visual interactive charts that show exactly where your money goes. Automatically tracks remaining balances in ₹ INR.</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card glass-card h-100 p-4 border-0 text-center">
+            <div class="d-inline-flex justify-content-center align-items-center bg-primary-soft text-primary rounded-circle mb-4 mx-auto" style="width: 80px; height: 80px;">
+                <i class="fa-solid fa-shield-halved fa-2xl"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Prevent Overspending</h4>
+            <p class="text-secondary mb-0">Our AI calculates the budget impact of every potential purchase to prevent you from going broke before the month ends.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

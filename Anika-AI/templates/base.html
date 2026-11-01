@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anika AI - Pre-Purchase Intelligence</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-anika-dark text-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-navbar">
+        <div class="container">
+            <a class="navbar-brand fw-bolder gradient-text fs-4" href="/">
+                <i class="fa-solid fa-brain me-2"></i>Anika AI
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link custom-link" href="{{ url_for('dashboard.index') }}"><i class="fa-solid fa-chart-pie me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link custom-link" href="{{ url_for('analysis.index') }}"><i class="fa-solid fa-microchip me-1"></i> Analyze</a></li>
+                    <li class="nav-item"><a class="nav-link custom-link fw-bold text-primary" href="{{ url_for('chat.index') }}"><i class="fa-solid fa-robot me-1"></i> Ask AI</a></li>
+                    <li class="nav-item text-light ms-3 me-3 d-none d-lg-block">
+                        <span class="badge bg-primary-soft rounded-pill px-3 py-2 border border-primary">
+                            <i class="fa-solid fa-user me-1"></i> {{ current_user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-danger btn-sm rounded-pill px-3 mt-2 mt-lg-0" href="{{ url_for('auth.logout') }}">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link custom-link" href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li class="nav-item ms-lg-2"><a class="btn btn-primary rounded-pill px-4 mt-2 mt-lg-0" href="{{ url_for('auth.register') }}">Get Started</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-container pt-5 mt-5 mb-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show custom-alert shadow-sm border-{{ category }} bg-{{ category }}-subtle text-{{ category }}" role="alert">
+                <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

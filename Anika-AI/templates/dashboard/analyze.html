@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h2 class="fw-bold gradient-text display-5">Pre-Purchase Intelligence</h2>
+    <p class="text-muted">Let AI analyze the product value before you spend your hard-earned money.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 mb-4">
+        <div class="card glass-card border-0 shadow h-100">
+            <div class="card-header bg-transparent border-bottom border-secondary pt-4 pb-3">
+                <h5 class="mb-0 fw-semibold"><i class="fa-solid fa-magnifying-glass me-2 text-primary"></i>Analyze Product</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold text-uppercase">Product Name</label>
+                        <input type="text" name="product_name" class="form-control custom-input" placeholder="e.g. Apple AirPods Pro" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold text-uppercase">Category</label>
+                        <select name="category" class="form-select custom-input">
+                            <option value="Electronics">Electronics</option>
+                            <option value="Food">Food</option>
+                            <option value="Cosmetics">Cosmetics</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Subscriptions">Subscriptions</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold text-uppercase">Price (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text custom-input-group">₹</span>
+                            <input type="number" name="price" class="form-control custom-input" placeholder="15000" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-semibold text-uppercase">Estimated Quality/Rating (1-5)</label>
+                        <input type="number" name="rating" class="form-control custom-input" step="0.1" max="5" min="1" placeholder="4.5" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-glow py-2 fw-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Get AI Recommendation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-7 mb-4">
+        {% if result %}
+        {% set rec_class = 'success' if result.recommendation == 'BUY' else 'warning' if result.recommendation == 'WAIT' else 'danger' %}
+        {% set rec_icon = 'fa-check-circle' if result.recommendation == 'BUY' else 'fa-clock' if result.recommendation == 'WAIT' else 'fa-ban' %}
+        
+        <div class="card glass-card border-0 shadow mb-4 animate-fade-in recommendation-card-{{ rec_class }}">
+            <div class="card-body text-center p-5 position-relative overflow-hidden">
+                <div class="card-glow glow-{{ rec_class }}"></div>
+                <h5 class="text-muted mb-4">AI Recommendation for <strong class="text-light">{{ result.product_name }}</strong></h5>
+                
+                <div class="recommendation-badge bg-{{ rec_class }}-subtle text-{{ rec_class }} d-inline-block px-5 py-3 rounded-pill mb-4 border border-{{ rec_class }}">
+                    <h1 class="fw-bolder mb-0 display-4"><i class="fa-solid {{ rec_icon }} me-2"></i>{{ result.recommendation }}</h1>
+                </div>
+                
+                <h4 class="fw-semibold mb-4">Value Score: <span class="badge bg-dark border border-secondary px-3 py-2 ms-2 fs-5">{{ result.score }} / 100</span></h4>
+                
+                <div class="row text-start mt-4">
+                    {% for insight in result.insights %}
+                    <div class="col-12 mb-3">
+                        <div class="d-flex align-items-start bg-dark-subtle p-3 rounded border border-secondary">
+                            <i class="fa-solid fa-lightbulb text-warning mt-1 me-3"></i>
+                            <p class="mb-0">{{ insight }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <h5 class="fw-semibold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i>Analysis History</h5>
+        <div class="list-group custom-list gap-2">
+            {% for item in history %}
+            {% set item_class = 'success' if item.recommendation == 'BUY' else 'warning' if item.recommendation == 'WAIT' else 'danger' %}
+            <div class="list-group-item glass-list-item d-flex justify-content-between align-items-center rounded border-0 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-circle bg-{{ item_class }}-subtle text-{{ item_class }} me-3 d-flex justify-content-center align-items-center rounded-circle" style="width:45px; height:45px;">
+                        <i class="fa-solid {% if item.recommendation == 'BUY' %}fa-check{% elif item.recommendation == 'WAIT' %}fa-clock{% else %}fa-xmark{% endif %}"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-1 fw-bold">{{ item.product_name }}</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-dark border border-secondary text-light">{{ item.price | inr }}</span>
+                            <small class="text-muted">Score: {{ item.score }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-{{ item_class }} rounded-pill px-3 py-2">{{ item.recommendation }}</span>
+                    <small class="d-block text-muted mt-1" style="font-size: 0.7rem;">{{ item.date.strftime('%d %b, %H:%M') }}</small>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center p-4 bg-dark-subtle rounded border border-secondary">
+                <p class="text-muted mb-0">No past analysis available. Start analyzing products!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

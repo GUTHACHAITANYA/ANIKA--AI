@@ -1,0 +1,155 @@
+:root {
+    --bg-color: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --text-primary: #ffffff;
+    --text-secondary: #cbd5e1;
+    --accent-1: #7c3aed;
+    --accent-2: #8b5cf6;
+    --accent-3: #c084fc;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.1), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.1), transparent 25%);
+    background-attachment: fixed;
+}
+
+/* Typography & Colors */
+.gradient-text {
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-primary { color: var(--accent-1) !important; }
+.bg-primary { background-color: var(--accent-1) !important; }
+.bg-primary-soft { background-color: rgba(124, 58, 237, 0.1) !important; }
+.border-primary { border-color: rgba(124, 58, 237, 0.3) !important; }
+
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+
+.bg-success { background-color: var(--success) !important; }
+.bg-warning { background-color: var(--warning) !important; }
+.bg-danger { background-color: var(--danger) !important; }
+
+/* Components */
+.glass-navbar {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 16px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.custom-link {
+    font-weight: 500;
+    color: var(--text-secondary) !important;
+    transition: color 0.2s ease;
+}
+.custom-link:hover, .nav-item .active {
+    color: var(--text-primary) !important;
+}
+
+/* Form Elements */
+.custom-input, .custom-select, .custom-input-group {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-primary) !important;
+    border-radius: 8px;
+}
+.custom-input:focus {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: var(--accent-1) !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2) !important;
+}
+.custom-input::placeholder { color: rgba(255,255,255,0.3); }
+
+select.custom-input option {
+    background-color: #1e293b;
+    color: #fff;
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-glow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+
+/* Lists */
+.glass-list-item {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid var(--glass-border) !important;
+    transition: background 0.2s ease;
+}
+.glass-list-item:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+.custom-delete-btn:hover {
+    color: var(--danger) !important;
+}
+
+/* Glow effects */
+.card-glow {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    filter: blur(50px);
+    z-index: 0;
+    opacity: 0.15;
+    top: -50px;
+    right: -50px;
+    pointer-events: none;
+}
+.glow-success { background: var(--success); }
+.glow-danger { background: var(--danger); }
+.glow-warning { background: var(--warning); }
+
+.card-body { position: relative; z-index: 1; }
+
+/* Recommendation Cards */
+.recommendation-card-success { border: 1px solid rgba(34, 197, 94, 0.3) !important; }
+.recommendation-card-danger { border: 1px solid rgba(239, 68, 68, 0.3) !important; }
+.recommendation-card-warning { border: 1px solid rgba(245, 158, 11, 0.3) !important; }
+
+/* Animations */
+@keyframes pulse-soft {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+}
+.animate-pulse { animation: pulse-soft 2s infinite; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
