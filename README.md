@@ -8,7 +8,7 @@
 [![Vite](https://img.shields.io/badge/vite-6.2-646CFF.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/tailwind-3.4-38B2AC.svg)](https://tailwindcss.com/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E.svg)](https://scikit-learn.org/)
-[![Tests](https://img.shields.io/badge/tests-29%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-60%20passed-brightgreen.svg)]()
 
 ---
 
@@ -48,8 +48,13 @@ The system integrates Google Gemini Vision for document comprehension with an of
 - **AI Financial Assistant**:
   - Grounded in real-time user database figures (spending by category, monthly budget, pending debts).
   - Answers questions like: *"How much did I spend this month?"*, *"What is my highest spending category?"*, *"How much does Ramu owe me?"*.
-- **Smart Buy AI**:
-  - Evaluates big-ticket purchase affordability against remaining monthly budget, savings runway, and daily pacing.
+- **Smart Buy – AI Best Discount Finder & Affordability Advisor**:
+  - **Price & Discount Comparison**: Compare prices across Indian e-commerce platforms (Amazon India, Flipkart, Croma, Reliance Digital, Tata CLiQ, Myntra) with highest-discount-first ranking.
+  - **Deterministic Formula**: Real mathematical discount calculation `((Original - Selling) / Original) * 100` with zero floating point drift and lower final payable price tie-breaking.
+  - **Product & Variant Matching**: Normalizes and checks storage, RAM, color, and size compatibility so different device variants are never falsely equated.
+  - **Transparent Price Breakdown**: Explicit separation of guaranteed savings (unconditional coupons) from conditional offers (bank discounts, cashback).
+  - **Natural-Language Search**: AI-powered parsing for conversational queries like *"Best smartphone under ₹25,000"* or *"Laptop with 16GB RAM under ₹60,000"*.
+  - **Affordability Simulation**: Purchase impact simulation against remaining monthly budget, savings runway, and daily pacing.
 - **Budget Insights**:
   - Set total monthly budget and category-specific thresholds with visual warning limits (safe < 80%, warning 80-90%, exceeded > 100%).
 - **Interactive Analytics (Recharts)**:
@@ -122,6 +127,11 @@ anika-ai/
 │   └── main.tsx                       # React root entry
 │
 ├── backend/                           # Python Flask API & ML Pipeline
+│   ├── smart_buy/                     # Smart Buy Comparison Engine
+│   │   ├── models/                    # Product, ProductOffer, SearchHistory, PriceHistory, ShoppingProvider
+│   │   ├── providers/                 # BaseProvider, Amazon, Flipkart, Croma, Reliance Digital, Tata CLiQ, Myntra
+│   │   ├── services/                  # query_parser.py, discount_calculator.py, product_matcher.py, search_service.py
+│   │   └── routes/                    # smart_buy_routes.py (/api/smart-buy/*)
 │   ├── models/                        # SQLAlchemy Models: User, Expense, ExpenseItem, Participant, Split, Settlement, Receipt, Budget, ActivityLog, AIInsight
 │   ├── routes/                        # Blueprints: auth, ocr, split, settlement, expense, dashboard, analytics, budget, ai, export
 │   ├── services/                      # settlement_engine.py, split_calculator.py, gemini_service.py, ocr_parser.py, nlp_service.py, smart_buy_engine.py
@@ -171,6 +181,11 @@ anika-ai/
 8. **`budgets`**: `id`, `user_id`, `month`, `year`, `total_budget`, `category_budgets_json`, `created_at`, `updated_at`.
 9. **`activity_logs`**: `id`, `user_id`, `action_type`, `description`, `metadata_json`, `timestamp`.
 10. **`ai_insights`**: `id`, `user_id`, `insight_type`, `content`, `recommendations_json`, `created_at`.
+11. **`products`**: `id`, `title`, `brand`, `model_name`, `category`, `image_url`, `base_mrp`, `specs_json`, `created_at`, `updated_at`.
+12. **`product_offers`**: `id`, `product_id`, `platform_id`, `platform_name`, `product_title`, `product_url`, `original_price`, `selling_price`, `discount_percentage`, `coupon_discount`, `bank_discount`, `cashback`, `delivery_fee`, `final_payable_price`, `rating`, `reviews_count`, `availability`, `offer_details`, `variant_attributes_json`, `is_verified`, `last_checked`.
+13. **`search_histories`**: `id`, `user_id`, `query`, `category`, `filters_json`, `results_count`, `top_platform`, `top_discount_pct`, `created_at`.
+14. **`price_histories`**: `id`, `product_id`, `platform_id`, `price`, `original_price`, `discount_percentage`, `recorded_at`.
+15. **`shopping_providers`**: `id`, `slug`, `name`, `website_url`, `is_active`, `requires_auth`, `status_message`.
 
 ---
 
@@ -245,7 +260,39 @@ Open your browser at **`http://localhost:5173`**.
 
 ## 8. Verification & Testing Summary
 
-All 29 test cases execute with 100% pass rate:
+All 60 test cases execute with 100% pass rate:
+- **`tests/test_smart_buy.py`** (31 PASSED):
+  - `test_discount_calculation_basic` (PASSED)
+  - `test_discount_35_percent` (PASSED)
+  - `test_discount_25_percent` (PASSED)
+  - `test_discount_missing_original_returns_zero` (PASSED)
+  - `test_discount_zero_original_returns_zero` (PASSED)
+  - `test_discount_selling_equals_original` (PASSED)
+  - `test_discount_selling_above_original` (PASSED)
+  - `test_final_payable_no_extras` (PASSED)
+  - `test_final_payable_with_delivery` (PASSED)
+  - `test_final_payable_with_coupon` (PASSED)
+  - `test_cashback_not_in_final_payable` (PASSED)
+  - `test_highest_discount_sort` (PASSED)
+  - `test_tiebreaker_lower_price_wins` (PASSED)
+  - `test_lowest_price_sort` (PASSED)
+  - `test_highest_rating_sort` (PASSED)
+  - `test_tag_best_discount` (PASSED)
+  - `test_extract_storage` (PASSED)
+  - `test_extract_color` (PASSED)
+  - `test_variant_mismatch_flagged` (PASSED)
+  - `test_variant_match_passes` (PASSED)
+  - `test_missing_key_ignored` (PASSED)
+  - `test_providers_endpoint_returns_list` (PASSED)
+  - `test_provider_unavailable_has_status` (PASSED)
+  - `test_provider_amazon_unavailable_without_creds` (PASSED)
+  - `test_search_no_query_returns_400` (PASSED)
+  - `test_search_returns_demo_offers` (PASSED)
+  - `test_search_sorted_highest_discount` (PASSED)
+  - `test_search_history_saved` (PASSED)
+  - `test_cashback_not_in_guaranteed_savings` (PASSED)
+  - `test_compare_ranks_correctly` (PASSED)
+  - `test_price_history_no_data` (PASSED)
 - **`tests/test_splits.py`**:
   - `test_equal_split_even_division` (PASSED)
   - `test_equal_split_odd_cent_remainder_balanced` (PASSED)

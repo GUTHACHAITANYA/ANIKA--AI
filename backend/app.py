@@ -15,6 +15,11 @@ from backend.routes import (
     expense_bp, dashboard_bp, analytics_bp,
     budget_bp, ai_bp, export_bp
 )
+from backend.smart_buy.routes.smart_buy_routes import smart_buy_bp
+from backend.smart_buy.models.smart_buy_models import (  # noqa: F401 – registers models with SQLAlchemy
+    Product, ProductOffer, SearchHistory as SmartBuySearchHistory,
+    PriceHistory, ShoppingProvider
+)
 from backend.utils.logger import logger
 
 def create_app(config_class=Config):
@@ -46,6 +51,7 @@ def create_app(config_class=Config):
     app.register_blueprint(budget_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(smart_buy_bp)
 
     # Global error handlers (no raw tracebacks shown to user)
     @app.errorhandler(400)
